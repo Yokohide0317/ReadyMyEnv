@@ -1,5 +1,5 @@
 [package]
-name = "ready_my_env"
+name = "reme"
 version = "0.1.0"
 edition = "2021"
 
