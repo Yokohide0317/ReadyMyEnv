@@ -53,7 +53,7 @@ fn main() {
     // 環境リスト
     let mut env_list = HashMap::new();
     env_list.insert(String::from("python"), "https://github.com/Yokohide0317/my-python-env.git");
-    env_list.insert(String::from("r"), "https://github.com/Yokohide0317/my-irkernel-env.git");
+    env_list.insert(String::from("r"), "https://github.com/Yokohide0317/my-r-env.git");
 
     // 引数の解析
     let args: Vec<String> = env::args().collect();
