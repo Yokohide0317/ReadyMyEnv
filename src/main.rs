@@ -4,6 +4,8 @@ use getopts::Options;
 use std::env;
 use std::path::{Path, PathBuf};
 use glob::glob;
+use std::fs::File;
+use std::io::Write;
 
 
 fn print_usage(program: &str, opts: Options) {
@@ -11,7 +13,7 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn copy_files(src: PathBuf, dst: &str) {
+fn copy_files(src: PathBuf, dst: &str) -> String{
 
     // ignore files
     let ignore_files = [
@@ -29,13 +31,13 @@ fn copy_files(src: PathBuf, dst: &str) {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).expect("Failed to read line");
         if input.trim() != "y" {
-            return;
+            return String::from("");
         }
     }
 
     for ignore_file in ignore_files.iter() {
         if filename == ignore_file.to_string() {
-            return;
+            return String::from("");
         }
     }
 
@@ -43,6 +45,8 @@ fn copy_files(src: PathBuf, dst: &str) {
         .args(["-r", src.to_str().unwrap(), dst])
         .output()
         .expect("failed to start `cp`");
+
+    return filename;
 
     //println!("{}", String::from_utf8_lossy(&copy_output.stdout));
 }
@@ -89,7 +93,6 @@ fn main() {
     println!("Selected: {}", lang);
     println!("Cloneing URL: {}", env_list.get(&lang).unwrap());
 
-
     // git clone
     let clone_path = Path::new(&cwd).join("tmpEnv");
     let clone_output = Command::new("git")
@@ -99,15 +102,29 @@ fn main() {
 
     println!("{}", String::from_utf8_lossy(&clone_output.stdout));
 
+    // コピーしたリポジトリ情報を書く
+    let envinfo_path = Path::new(&cwd).join("MyEnvInfo.md");
+    let mut file = File::create(envinfo_path).unwrap();
+    file.write_all(String::from("# MyEnvInfo\n").as_bytes()).unwrap();
+    file.write_all(format!("{}\n\n", env_list.get(&lang).unwrap().to_string()).as_bytes()).unwrap();
+    file.write_all(String::from("## Files\n").as_bytes()).unwrap();
+
 
     // 中身をコピー
     let copy_contents = Path::new(&clone_path).join("*");
     for entry in glob(copy_contents.to_str().unwrap()).expect("Failed to read glob pattern") {
         match entry {
-            Ok(path) => copy_files(path, cwd.to_str().unwrap()), //println!("{:?}", path.display()),
+            Ok(path) => {
+                // MyEnvInfo.mdに記入。
+                let filename = copy_files(path, cwd.to_str().unwrap());
+                if filename != "" {
+                    file.write_all(format!("- {}\n", filename).as_bytes()).unwrap();
+                }
+            },
             Err(e) => println!("{:?}", e),
         }
     }
+
 
     // cloneしたディレクトリを削除
     let rm_output = Command::new("rm")
